@@ -14,9 +14,9 @@ namespace Inspector.Models
 		public string FileName { get; set; }
 
 		[DataMember]
-		public DateTimeOffset RunTime { get; set; }
+		public DateTime RunTime { get; set; }
 
-		public LaunchEventInfoModel(string FileName, DateTimeOffset RunTime)
+		public LaunchEventInfoModel(string FileName, DateTime RunTime)
 		{
 			this.FileName = FileName;
 			this.RunTime = RunTime;

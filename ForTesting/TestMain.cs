@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Eventing.Reader;
 using System.Linq;
@@ -9,23 +10,59 @@ namespace ForTesting
 {
 	internal class TestMain
 	{
-		static async Task Main(string[] args)
+		static void Main(string[] args)
 		{
 
-			string logName = "Microsoft-Windows-DriverFrameworks-UserMode/Operational";
-			string source = "Microsoft-Windows-DriverFrameworks-UserMode";
-			string query = "*[System/EventID=2003 or System/EventID=2100 or System/EventID=2102]";
+			string queryString = "SELECT * FROM Win32_DiskDrive WHERE InterfaceType='USB' AND MediaType='Removable Media'";
 
-			var eventLog = new EventLogQuery(logName, PathType.LogName, query);
-			var eventLogReader = new EventLogReader(eventLog);
+			ManagementObjectSearcher searcher = new ManagementObjectSearcher(queryString);
 
-			for (EventRecord eventInstance = eventLogReader.ReadEvent(); eventInstance != null; eventInstance = eventLogReader.ReadEvent())
+			foreach (ManagementObject drive in searcher.Get())
 			{
-				Console.WriteLine("Event ID: {0}", eventInstance.Id);
-				Console.WriteLine("Time Created: {0}", eventInstance.TimeCreated);
-				Console.WriteLine("Message: {0}", eventInstance.FormatDescription());
-				Console.WriteLine();
+				string deviceId = (string)drive.GetPropertyValue("DeviceID");
+				object installDateObject = drive.GetPropertyValue("InstallDate");
+				DateTime installDate;
+
+				if (installDateObject == null)
+				{
+					installDate = new DateTime(1970, 1, 1);
+				}
+				else
+				{
+					installDate = ManagementDateTimeConverter.ToDateTime((string)installDateObject);
+				}
+
+				Console.WriteLine("USB Mass Storage device found: {0}, installed on {1}", deviceId, installDate.ToString("yyyy-MM-dd HH:mm:ss"));
 			}
+		}
+
+		public class USBDeviceInfo
+		{
+			public string DeviceID { get; set; }
+			public string PNPDeviceID { get; set; }
+			public string Description { get; set; }
+			public string InstallDate { get; set; }
+		}
+
+		public static List<USBDeviceInfo> GetUSBDevices()
+		{
+			List<USBDeviceInfo> devices = new List<USBDeviceInfo>();
+			using (var searcher = new ManagementObjectSearcher(@"Select * From Win32_USBHub"))
+			{
+				foreach (var device in searcher.Get())
+				{
+					if ((string)device.GetPropertyValue("ClassGuid") == "{4d36e967-e325-11ce-bfc1-08002be10318}")
+					{
+						USBDeviceInfo deviceInfo = new USBDeviceInfo();
+						deviceInfo.DeviceID = (string)device.GetPropertyValue("DeviceID");
+						deviceInfo.PNPDeviceID = (string)device.GetPropertyValue("PNPDeviceID");
+						deviceInfo.Description = (string)device.GetPropertyValue("Description");
+						deviceInfo.InstallDate = (string)device.GetPropertyValue("InstallDate");
+						devices.Add(deviceInfo);
+					}
+				}
+			}
+			return devices;
 		}
 	}
 }

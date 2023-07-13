@@ -41,11 +41,28 @@ namespace Server.BGTasks
 						currentEvidence.score = score;
 						currentEvidence.reasonForScore = reason;
 					}
+					if (currentEvidence.type == "USBDevices")
+					{
+						Log("Found USB task");
+						var runHistoryEvidence = await _context.EvidenceModel.FirstOrDefaultAsync(e=>e.steamId == currentEvidence.steamId && e.type== "RunHistory");
+						if (runHistoryEvidence is not null)
+						{
+							(int score, string reason) = await EvidenceProcessors.USBDevices.Process(currentEvidence.data, runHistoryEvidence.data);
+							currentEvidence.score = score;
+							currentEvidence.reasonForScore = reason;
+						}
+						else
+						{
+							Log("Can't process USB task cuz don't have RunHistory");
+							continue; // из-за этого может быть проблема
+						}
+					}
+
 					currentEvidence.isProcessed = true;
-					(await _context.SuspectsModel.FirstOrDefaultAsync(s=>s.steamId == currentEvidence.steamId)).score+=currentEvidence.score;
+					(await _context.SuspectsModel.FirstOrDefaultAsync(s => s.steamId == currentEvidence.steamId)).score += currentEvidence.score;
 					await _context.SaveChangesAsync();
                 }
-				//await Task.Delay(30000);
+				await Task.Delay(1000);
             }
 		}
 

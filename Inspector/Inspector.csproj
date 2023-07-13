@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Prefetch" Version="1.2.0" />
+    <PackageReference Include="System.IO.Compression.ZipFile" Version="4.3.0" />
   </ItemGroup>
 
 </Project>

@@ -23,13 +23,13 @@ namespace Inspector.Collectors
 				var prefetch = PrefetchFile.Open(file);
 				foreach (var runTime in prefetch.LastRunTimes)
 				{
-					events.Add(new Models.LaunchEventInfoModel(prefetch.Header.ExecutableFilename, runTime));
-					//Console.WriteLine(prefetch.Header.ExecutableFilename);
+					events.Add(new Models.LaunchEventInfoModel(prefetch.Header.ExecutableFilename, runTime.ToLocalTime().DateTime));
+					//Console.WriteLine($"{prefetch.Header.ExecutableFilename} | {runTime.LocalDateTime}");
 				}
 			});
 			var sortedEvents = events.OrderByDescending(e => e.RunTime).ToList();
 			string res = SharedMethods.ToJson(sortedEvents);
-			//Console.WriteLine(res);
+			File.WriteAllText("a.txt", res);
 			await Requests.SendEvidence("RunHistory", res);
 		}
 	}

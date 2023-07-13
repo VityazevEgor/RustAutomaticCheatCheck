@@ -27,96 +27,7 @@ namespace Server.Controllers
                           Problem("Entity set 'dbContext.EvidenceModel'  is null.");
         }
 
-        // GET: EvidenceView/Details/5
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null || _context.EvidenceModel == null)
-            {
-                return NotFound();
-            }
-
-            var evidenceModel = await _context.EvidenceModel
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (evidenceModel == null)
-            {
-                return NotFound();
-            }
-
-            return View(evidenceModel);
-        }
-
-        // GET: EvidenceView/Create
-        public IActionResult Create()
-        {
-            return View();
-        }
-
-        // POST: EvidenceView/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,steamId,type,score,data,reasonForScore,createdAt,isProcessed")] EvidenceModel evidenceModel)
-        {
-            if (ModelState.IsValid)
-            {
-                _context.Add(evidenceModel);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            return View(evidenceModel);
-        }
-
-        // GET: EvidenceView/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null || _context.EvidenceModel == null)
-            {
-                return NotFound();
-            }
-
-            var evidenceModel = await _context.EvidenceModel.FindAsync(id);
-            if (evidenceModel == null)
-            {
-                return NotFound();
-            }
-            return View(evidenceModel);
-        }
-
-        // POST: EvidenceView/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,steamId,type,score,data,reasonForScore,createdAt,isProcessed")] EvidenceModel evidenceModel)
-        {
-            if (id != evidenceModel.Id)
-            {
-                return NotFound();
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(evidenceModel);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!EvidenceModelExists(evidenceModel.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            return View(evidenceModel);
-        }
+       
 
         // GET: EvidenceView/Delete/5
         public async Task<IActionResult> Delete(int? id)
@@ -152,7 +63,7 @@ namespace Server.Controllers
             }
             
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Index), new { steamID=evidenceModel?.steamId });
         }
 
         private bool EvidenceModelExists(int id)
