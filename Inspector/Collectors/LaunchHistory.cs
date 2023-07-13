@@ -29,7 +29,7 @@ namespace Inspector.Collectors
 			});
 			var sortedEvents = events.OrderByDescending(e => e.RunTime).ToList();
 			string res = SharedMethods.ToJson(sortedEvents);
-			Console.WriteLine(res);
+			//Console.WriteLine(res);
 			await Requests.SendEvidence("RunHistory", res);
 		}
 	}

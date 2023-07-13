@@ -34,6 +34,7 @@
 								<td>@suspect.score</td>
 								<td>@suspect.createdAt</td>
 								<td>
+											 <a href="@Url.Action("Index", "EvidenceView", new { steamID = suspect.steamId })" class="btn btn-primary">View Evidence</a>
 										 <a href="@Url.Action("deleteSus", "Home", new { id = suspect.Id })" class="btn btn-danger">Удалить</a>
 								</td>
 							</tr>

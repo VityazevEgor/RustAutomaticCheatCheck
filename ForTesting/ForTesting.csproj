@@ -9,7 +9,10 @@
 
   <ItemGroup>
     <PackageReference Include="Selenium.WebDriver" Version="4.10.0" />
+    <PackageReference Include="System.Diagnostics.EventLog" Version="7.0.0" />
+    <PackageReference Include="System.Management" Version="7.0.2" />
     <PackageReference Include="TheMulti0.DuckSharp" Version="1.0.2" />
+    <PackageReference Include="Usb.Net" Version="4.2.1" />
   </ItemGroup>
 
 </Project>

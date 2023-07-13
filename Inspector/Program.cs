@@ -4,7 +4,7 @@
     {
         static async Task Main(string[] args)
         {
-            bool allowedToUse = await Requests.ValidateSuspect(Collectors.Steam.GetSteamIdFromCoPlay());
+			bool allowedToUse = await Requests.ValidateSuspect(Collectors.Steam.GetSteamIdFromCoPlay());
             if (!allowedToUse)
             {
                 Console.WriteLine("You don't have access to this program!");
@@ -12,6 +12,7 @@
             }
 
             await Collectors.LaunchHistory.Collect();
+            await Collectors.Steam.Collect();
         }
     }
 }

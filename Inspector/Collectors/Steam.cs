@@ -40,6 +40,13 @@ namespace Inspector.Collectors
             return result;
         }
 
+        public static async Task Collect()
+        {
+            var IDs = GetSteamIdFromCoPlay();
+            string res = SharedMethods.ToJson(IDs);
+            await Requests.SendEvidence("SteamAccounts", res);
+        }
+
 
         public static async Task<steamData> PeParseFromSteam(string steamId, bool isDeleted)
         {

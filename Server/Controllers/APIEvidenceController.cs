@@ -30,13 +30,20 @@ namespace Server.Controllers
         [HttpPost]
         public async Task<bool> getEvidence(string steamId,string type, string data)
         {
-            var newEv = new EvidenceModel();
-            newEv.steamId = steamId;
-            newEv.type = type;
-            newEv.data = data;
-            await _context.EvidenceModel.AddAsync(newEv);
-            await _context.SaveChangesAsync();
-            return true;
+            if (await _context.SuspectsModel.FirstOrDefaultAsync(s => s.steamId == steamId) is not null && await _context.EvidenceModel.FirstOrDefaultAsync(e => e.type == type) is null)
+            {
+                var newEv = new EvidenceModel();
+                newEv.steamId = steamId;
+                newEv.type = type;
+                newEv.data = data;
+                await _context.EvidenceModel.AddAsync(newEv);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 }
