@@ -4,24 +4,31 @@ using Server.BGTasks.EvidenceModels;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Text;
+using Server.BGTasks;
 
 namespace Server.BGTasks.EvidenceProcessors
 {
-	public class RunHisoty
+	public class RunHisoty : EvidenceChecker.IEvidenceWoker
 	{
-		const string promtTemplate = "You have a list of executable file names:\n{replaceMe}\nPrint the names of executable files that you do not know separated by commas. If there are no suitable names, then simply write “No” in the answer. You don't need to write explanations, just give an answer.";
-		const string pattern = ".*\\.exe";
 		const bool debugMode = true;
-		public static async Task<(int,string)> Process(string content)
+
+		public int score { get; set; } = 0;
+		public int evidenceId { get; set; }
+		public string reasonForScore { get; set; }
+		public string additionalOutput { get; set; }
+		public bool isProccessed { get; set; } = false;
+
+		public async Task Process(Dictionary<string, string> data)
 		{
 			FirefoxOptions options = new FirefoxOptions();
 			options.AddArgument("--headless");
 			List<string> susFiles = new List<string>();
+			List<string> whiteListFiles = new List<string>();
 
 			using (FirefoxDriver driver = new FirefoxDriver(options))
 			{
 
-				List<LaunchEventInfoModel> events = await JsonSerializer.DeserializeAsync<List<LaunchEventInfoModel>>(new MemoryStream(Encoding.UTF8.GetBytes(content)));
+				List<LaunchEventInfoModel> events = await JsonSerializer.DeserializeAsync<List<LaunchEventInfoModel>>(new MemoryStream(Encoding.UTF8.GetBytes(data["raw"])));
 				var exeEvents = events.Where(e => e.FileName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)).OrderByDescending(e => e.RunTime).ToList();
 
 				foreach (var exeEvent in exeEvents)
@@ -30,12 +37,17 @@ namespace Server.BGTasks.EvidenceProcessors
 					{
 						int startIndex = exeEvents.IndexOf(exeEvent);
 						int endIndex = Math.Min(startIndex + 10, exeEvents.Count);
-						for (int i=startIndex; i<endIndex ; i++)
+						for (int i = startIndex; i < endIndex; i++)
 						{
+							if (data["aditionalData"].Contains(exeEvents[i].FileName) || susFiles.Contains(exeEvents[i].FileName)) continue; // если уже ранее проверялось то скипаем
 							if (await SearchDuckDuckGo(driver, exeEvents[i].FileName))
 							{
 								susFiles.Add(exeEvents[i].FileName);
 								Log($"Found sus file - {exeEvents[i].FileName}");
+							}
+							else
+							{
+								whiteListFiles.Add(exeEvents[i].FileName);
 							}
 						}
 					}
@@ -43,16 +55,19 @@ namespace Server.BGTasks.EvidenceProcessors
 				Log("Finished");
 				if (susFiles.Count > 0)
 				{
-					return (70, $"I found suspicious files that were running before the Rust: {string.Join(',', susFiles)}");
+					score = 70;
+					reasonForScore = $"I found suspicious files that were running before the Rust: {string.Join(',', susFiles)}";
 				}
 				else
 				{
-					return (0, "Didn't find anything suspicious");
+					reasonForScore = "Didn't find anything suspicious";
 				}
 			}
+			additionalOutput = string.Join('\n', whiteListFiles);
+			susFiles.Clear();
+			whiteListFiles.Clear();
+			isProccessed = true;
 		}
-
-
 		private static async Task<bool> SearchDuckDuckGo(FirefoxDriver driver, string fileName)
 		{
 			string url = $"https://duckduckgo.com/?q=\"{Uri.EscapeDataString(fileName)}\"";

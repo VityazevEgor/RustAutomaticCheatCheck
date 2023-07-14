@@ -12,57 +12,43 @@ namespace ForTesting
 	{
 		static void Main(string[] args)
 		{
-
-			string queryString = "SELECT * FROM Win32_DiskDrive WHERE InterfaceType='USB' AND MediaType='Removable Media'";
-
-			ManagementObjectSearcher searcher = new ManagementObjectSearcher(queryString);
-
-			foreach (ManagementObject drive in searcher.Get())
+			List<IWorker> tasks = new List<IWorker>();
+			tasks.Add(new Worker());
+			foreach (var task in tasks)
 			{
-				string deviceId = (string)drive.GetPropertyValue("DeviceID");
-				object installDateObject = drive.GetPropertyValue("InstallDate");
-				DateTime installDate;
-
-				if (installDateObject == null)
-				{
-					installDate = new DateTime(1970, 1, 1);
-				}
-				else
-				{
-					installDate = ManagementDateTimeConverter.ToDateTime((string)installDateObject);
-				}
-
-				Console.WriteLine("USB Mass Storage device found: {0}, installed on {1}", deviceId, installDate.ToString("yyyy-MM-dd HH:mm:ss"));
+				task.Process("kek");
 			}
-		}
-
-		public class USBDeviceInfo
-		{
-			public string DeviceID { get; set; }
-			public string PNPDeviceID { get; set; }
-			public string Description { get; set; }
-			public string InstallDate { get; set; }
-		}
-
-		public static List<USBDeviceInfo> GetUSBDevices()
-		{
-			List<USBDeviceInfo> devices = new List<USBDeviceInfo>();
-			using (var searcher = new ManagementObjectSearcher(@"Select * From Win32_USBHub"))
+			while (true)
 			{
-				foreach (var device in searcher.Get())
+				for (int i=0; i<tasks.Count; i++)
 				{
-					if ((string)device.GetPropertyValue("ClassGuid") == "{4d36e967-e325-11ce-bfc1-08002be10318}")
+					if (tasks[i].finsihed)
 					{
-						USBDeviceInfo deviceInfo = new USBDeviceInfo();
-						deviceInfo.DeviceID = (string)device.GetPropertyValue("DeviceID");
-						deviceInfo.PNPDeviceID = (string)device.GetPropertyValue("PNPDeviceID");
-						deviceInfo.Description = (string)device.GetPropertyValue("Description");
-						deviceInfo.InstallDate = (string)device.GetPropertyValue("InstallDate");
-						devices.Add(deviceInfo);
+						Console.WriteLine(i);
+						break;
 					}
 				}
 			}
-			return devices;
+			tasks.RemoveAll(x => x.finsihed);
+			
+		}
+		public interface IWorker
+		{
+			string result { get; }
+			bool finsihed { get; }
+			Task Process(string content);
+
+		}
+		public class Worker : IWorker
+		{
+			public string result { get; set; } = string.Empty;
+			public bool finsihed { get; set; } = false;
+			public async Task Process(string content)
+			{
+				await Task.Delay(1000);
+				result = content;
+				finsihed = true;
+			}
 		}
 	}
 }

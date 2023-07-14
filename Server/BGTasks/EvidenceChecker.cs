@@ -1,4 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using OpenQA.Selenium.DevTools.V112.Debugger;
+using Server.BGTasks.EvidenceProcessors;
+using Server.Models;
+using System.Diagnostics;
 
 namespace Server.BGTasks
 {
@@ -6,6 +10,21 @@ namespace Server.BGTasks
 	{
 		private readonly IServiceScopeFactory _serviceScopeFactory;
 		private readonly dbContext _context;
+		List<IEvidenceWoker> evidenceWokers = new List<IEvidenceWoker>();
+		const int tasksLimit = 10;
+
+		private string runHistoryChachePath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location), "runHistoryChache.txt");
+
+		public interface IEvidenceWoker
+		{
+			int score { get; set; }
+			int evidenceId { get; set; }
+			string reasonForScore { get; set; }
+			string additionalOutput { get; set; }
+			bool isProccessed { get; set; }
+
+			Task Process(Dictionary<string, string> data);
+		}
 
 		public EvidenceChecker(IServiceScopeFactory serviceScopeFactory)
 		{
@@ -16,55 +35,109 @@ namespace Server.BGTasks
 
 		public Task StartAsync(CancellationToken cancellationToken)
 		{
-			Task.Run(() => Job());
+			if (!File.Exists(runHistoryChachePath)) File.WriteAllText(runHistoryChachePath, string.Empty);
+			Task.Run(() => paralerJob());
 			return Task.CompletedTask;
 		}
+		
 
-		public async Task Job()
+		private async Task paralerJob()
 		{
 			while (true)
 			{
-				var currentEvidence = await _context.EvidenceModel.Where(e=>e.isProcessed == false).OrderBy(e=>e.createdAt).FirstOrDefaultAsync();
-                if (currentEvidence is not null)
-                {
-                    if (currentEvidence.type == "RunHistory")
+				var currentEvidences = await _context.EvidenceModel.Where(e => e.isProcessed == false).OrderBy(e => e.createdAt).ToListAsync();
+
+				// добавления новых задач
+				foreach (var currentEvidence in currentEvidences)
+				{
+					if (evidenceWokers.Count >= tasksLimit) break;
+
+					// Если текущее доказательство не обрабатывается
+					if (evidenceWokers.FirstOrDefault(e => e.evidenceId == currentEvidence.Id) is null)
 					{
-						Log("Found runhistory task");
-						(int score, string reason) = await EvidenceProcessors.RunHisoty.Process(currentEvidence.data);
-						currentEvidence.score = score;
-						currentEvidence.reasonForScore = reason;
+						switch (currentEvidence.type)
+						{
+							case "RunHistory":
+								Log("Found runhistory task");
+								evidenceWokers.Add(CreateEvidenceWorker<RunHisoty>(currentEvidence, File.ReadAllText(runHistoryChachePath)));
+								break;
+
+							case "SteamAccounts":
+								Log("Found steam acc task");
+								evidenceWokers.Add(CreateEvidenceWorker<SteamAccounts>(currentEvidence));
+								break;
+
+							case "USBDevices":
+								var runHistoryEvidence = await _context.EvidenceModel.FirstOrDefaultAsync(e => e.steamId == currentEvidence.steamId && e.type == "RunHistory");
+								if (runHistoryEvidence is not null)
+								{
+									Log("Found USB task");
+									evidenceWokers.Add(CreateEvidenceWorker<USBDevices>(currentEvidence, runHistoryEvidence.data));
+								}
+								else
+								{
+									Log("Can't process USB task cuz don't have RunHistory");
+								}
+								break;
+
+							default:
+								Log($"Unknown task type: {currentEvidence.type}");
+								break;
+						}
 					}
-					if (currentEvidence.type == "SteamAccounts")
-					{ 
-						Log("Found steam acc task");
-						(int score, string reason) = await EvidenceProcessors.SteamAccounts.Process(currentEvidence.data);
-						currentEvidence.score = score;
-						currentEvidence.reasonForScore = reason;
-					}
-					if (currentEvidence.type == "USBDevices")
+				}
+
+				// обработка тех задач которые уже были выполнены
+				var complitedTasks = evidenceWokers.Where(t=>t.isProccessed).ToList();
+				foreach (var currentTask in complitedTasks)
+				{
+					Log($"Task with id = {currentTask.evidenceId} finished his work with score = {currentTask.score}");
+
+					var evidence = await _context.EvidenceModel.FirstOrDefaultAsync(e => currentTask.evidenceId == e.Id);
+					evidence.score = currentTask.score;
+					evidence.reasonForScore = currentTask.reasonForScore;
+					evidence.isProcessed = true;
+
+					var suspectModel = await _context.SuspectsModel.FirstOrDefaultAsync(s=>s.steamId == evidence.steamId);
+					suspectModel.score += evidence.score;
+
+					await _context.SaveChangesAsync();
+
+					if (evidence.type == "RunHistory")
 					{
-						Log("Found USB task");
-						var runHistoryEvidence = await _context.EvidenceModel.FirstOrDefaultAsync(e=>e.steamId == currentEvidence.steamId && e.type== "RunHistory");
-						if (runHistoryEvidence is not null)
-						{
-							(int score, string reason) = await EvidenceProcessors.USBDevices.Process(currentEvidence.data, runHistoryEvidence.data);
-							currentEvidence.score = score;
-							currentEvidence.reasonForScore = reason;
-						}
-						else
-						{
-							Log("Can't process USB task cuz don't have RunHistory");
-							continue; // из-за этого может быть проблема
-						}
+						await File.AppendAllTextAsync(runHistoryChachePath, currentTask.additionalOutput);
 					}
 
-					currentEvidence.isProcessed = true;
-					(await _context.SuspectsModel.FirstOrDefaultAsync(s => s.steamId == currentEvidence.steamId)).score += currentEvidence.score;
-					await _context.SaveChangesAsync();
-                }
-				await Task.Delay(1000);
-            }
+					evidenceWokers.RemoveAll(w => w.evidenceId == currentTask.evidenceId);
+				}
+
+				// чистка
+				complitedTasks.Clear();
+				currentEvidences.Clear();
+
+				await Task.Delay(500);
+			}
 		}
+
+		IEvidenceWoker CreateEvidenceWorker<T>(EvidenceModel evidence, string aditionalData = null) where T : IEvidenceWoker, new()
+		{
+			var worker = new T
+			{
+				evidenceId = evidence.Id
+			};
+			var arguments = new Dictionary<string, string>
+			{
+				{ "raw", evidence.data }
+			};
+			if (aditionalData is not null)
+			{
+				arguments.Add("aditionalData", aditionalData);
+			}
+			worker.Process(arguments);
+			return worker;
+		}
+
+
 
 		public Task StopAsync(CancellationToken cancellationToken)
 		{

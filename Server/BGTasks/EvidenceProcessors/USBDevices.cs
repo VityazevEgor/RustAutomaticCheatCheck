@@ -2,36 +2,43 @@
 using System.Text;
 using System.Text.Json;
 using System.Xml;
+using Server.BGTasks;
 
 namespace Server.BGTasks.EvidenceProcessors
 {
-	public class USBDevices
+	public class USBDevices : EvidenceChecker.IEvidenceWoker
 	{
-		public static async Task<(int, string)> Process(string content, string runHistory)
+
+		public int score { get; set; } = 0;
+		public int evidenceId { get; set; }
+		public string reasonForScore { get; set; }
+		public string additionalOutput { get; set; }
+		public bool isProccessed { get; set; } = false;
+		public async Task Process(Dictionary<string, string> data)
 		{
-			var USBDevices = ParseXml(content).Where(d=>d.DeviceType.ToLower().Contains("storage"));
-			List<LaunchEventInfoModel> events = await JsonSerializer.DeserializeAsync<List<LaunchEventInfoModel>>(new MemoryStream(Encoding.UTF8.GetBytes(runHistory)));
+			var usbDevices = ParseXml(data["raw"]).Where(d => d.DeviceType.ToLower().Contains("storage"));
+			var events = await JsonSerializer.DeserializeAsync<List<LaunchEventInfoModel>>(new MemoryStream(Encoding.UTF8.GetBytes(data["aditionalData"])));
 			var filteredEvents = events.Where(e => e.FileName.EndsWith("rust.exe", StringComparison.OrdinalIgnoreCase) || e.FileName.EndsWith("rustclient.exe", StringComparison.OrdinalIgnoreCase));
-			string reason = string.Empty;
-			
-			foreach (var device in USBDevices)
+
+			var foundDevices = usbDevices.Where(device =>
 			{
-				//Console.WriteLine($"{device.DeviceType} | {device.Description} | {device.CreatedDate} | {device.LastPlugUnplugDate}");
-				var foundItems = events.Where(e => (device.CreatedDate - e.RunTime <= TimeSpan.FromMinutes(10) && device.CreatedDate - e.RunTime>TimeSpan.FromSeconds(20)) 
-												|| (device.LastPlugUnplugDate - e.RunTime <= TimeSpan.FromMinutes(10) && device.LastPlugUnplugDate - e.RunTime>TimeSpan.FromSeconds(20)));
-				if (foundItems.Count() > 0)
-				{
-					reason += $"USB Device {device.Description} was plugged/unplaged before rust start {device.CreatedDate} or {device.LastPlugUnplugDate}.\n";
-				}
-			}
-			if (!string.IsNullOrEmpty(reason))
+				var foundItems = events.Where(e => (device.CreatedDate - e.RunTime <= TimeSpan.FromMinutes(10) && device.CreatedDate - e.RunTime > TimeSpan.FromSeconds(20))
+										|| (device.LastPlugUnplugDate - e.RunTime <= TimeSpan.FromMinutes(10) && device.LastPlugUnplugDate - e.RunTime > TimeSpan.FromSeconds(20)));
+
+				return foundItems.Count() > 0;
+			});
+
+			if (foundDevices.Any())
 			{
-				return (20, reason);
+				score = 20;
+				reasonForScore = $"USB Device {string.Join(", ", foundDevices.Select(d => d.Description))} was plugged/unplugged before rust start";
 			}
 			else
 			{
-				return (0, "The user did not perform any actions with USB devices before launching Rust");
+				reasonForScore = "The user did not perform any actions with USB devices before launching Rust";
 			}
+
+			isProccessed = true;
 		}
 
 		private static List<USBDevicesModel> ParseXml(string xmlString)

@@ -1,14 +1,21 @@
 ﻿using System.Text;
 using System.Text.Json;
+using Server.BGTasks;
 
 namespace Server.BGTasks.EvidenceProcessors
 {
-	public class SteamAccounts
+	public class SteamAccounts : EvidenceChecker.IEvidenceWoker
 	{
 		const bool debugMode = true;
-		public static async Task<(int, string)> Process(string content)
+
+		public int score { get; set; } = 0;
+		public int evidenceId { get; set; }
+		public string reasonForScore { get; set; }
+		public string additionalOutput { get; set; }
+		public bool isProccessed { get; set; } = false;
+		public async Task Process(Dictionary<string, string> data)
 		{
-			List<string> steamIDs = await JsonSerializer.DeserializeAsync<List<string>>(new MemoryStream(Encoding.UTF8.GetBytes(content)));
+			List<string> steamIDs = await JsonSerializer.DeserializeAsync<List<string>>(new MemoryStream(Encoding.UTF8.GetBytes(data["raw"])));
 			List<string> bannedIDs = new List<string>();
 			using (HttpClient client = new HttpClient())
 			{
@@ -22,16 +29,17 @@ namespace Server.BGTasks.EvidenceProcessors
 					}
 				}
 			}
-			
+
 			if (bannedIDs.Count > 0)
 			{
-				return (20, $"Found account(s) with game bans: {string.Join(' ', bannedIDs)}");
+				score = 20;
+				reasonForScore = $"Found account(s) with game bans: {string.Join(' ', bannedIDs)}";
 			}
 			else
 			{
-				return (0, "No accounts with game bans");
+				reasonForScore = "No accounts with game bans";
 			}
-
+			isProccessed = true;
 		}
 
 		public static async Task Log(string message)

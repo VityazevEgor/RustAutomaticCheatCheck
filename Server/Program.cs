@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting.Internal;
 using Server.BGTasks;
 using System.Composition;
 
@@ -19,9 +20,9 @@ namespace Server
 			builder.Services.AddHostedService<EvidenceChecker>();
 
 			var app = builder.Build();
-
-            // Configure the HTTP request pipeline.
-            if (!app.Environment.IsDevelopment())
+			Console.WriteLine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location));
+			// Configure the HTTP request pipeline.
+			if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Home/Error");
             }
@@ -36,6 +37,7 @@ namespace Server
                 pattern: "{controller=Home}/{action=Index}/{id?}");
 
             app.Run();
+            
         }
     }
 }
