@@ -2,8 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Eventing.Reader;
+using System.IO.Compression;
 using System.Linq;
 using System.Management;
+using System.Text;
 using Usb.Net;
 
 namespace ForTesting
@@ -12,42 +14,51 @@ namespace ForTesting
 	{
 		static void Main(string[] args)
 		{
-			List<IWorker> tasks = new List<IWorker>();
-			tasks.Add(new Worker());
-			foreach (var task in tasks)
+			string bigString = "dshfkhaskdhfkasdhklfhklsaheruyieyiq36586herkfhkdshklfhdkslahfklhlsdahfieyriewyiryioywqeoiryiowqeyioruyqo3478658yihfdkjhsklahflkhsalifhieuyroiy438dshfkhaskdhfkasdhklfhklsaheruyieyiq36586herkfhkdshklfhdkslahfklhlsdahfieyriewyiryioywqeoiryiowqeyioruyqo3478658yihfdkjhsklahflkhsalifhieuyroiy438dshfkhaskdhfkasdhklfhklsaheruyieyiq36586herkfhkdshklfhdkslahfklhlsdahfieyriewyiryioywqeoiryiowqeyioruyqo3478658yihfdkjhsklahflkhsalifhieuyroiy438dshfkhaskdhfkasdhklfhklsaheruyieyiq36586herkfhkdshklfhdkslahfklhlsdahfieyriewyiryioywqeoiryiowqeyioruyqo3478658yihfdkjhsklahflkhsalifhieuyroiy438dshfkhaskdhfkasdhklfhklsaheruyieyiq36586herkfhkdshklfhdkslahfklhlsdahfieyriewyiryioywqeoiryiowqeyioruyqo3478658yihfdkjhsklahflkhsalifhieuyroiy438dshfkhaskdhfkasdhklfhklsaheruyieyiq36586herkfhkdshklfhdkslahfklhlsdahfieyriewyiryioywqeoiryiowqeyioruyqo3478658yihfdkjhsklahflkhsalifhieuyroiy438";
+			string realyBigString = string.Empty;
+			for (int i=0; i<100*100; i++)
 			{
-				task.Process("kek");
+				realyBigString+= bigString;
 			}
-			while (true)
-			{
-				for (int i=0; i<tasks.Count; i++)
-				{
-					if (tasks[i].finsihed)
-					{
-						Console.WriteLine(i);
-						break;
-					}
-				}
-			}
-			tasks.RemoveAll(x => x.finsihed);
+			string compressed = Compress(realyBigString);
+			string decompressed = Decompress(compressed);
+			Console.WriteLine($"Compressed: {compressed} \nSize = {compressed.Length} OrigSize = {realyBigString.Length}");
+			Console.WriteLine($"Decompressed == Original: {decompressed == realyBigString}");
 			
 		}
-		public interface IWorker
+		public static string Compress(string originalString)
 		{
-			string result { get; }
-			bool finsihed { get; }
-			Task Process(string content);
-
-		}
-		public class Worker : IWorker
-		{
-			public string result { get; set; } = string.Empty;
-			public bool finsihed { get; set; } = false;
-			public async Task Process(string content)
+			byte[] bytes = Encoding.UTF8.GetBytes(originalString);
+			using (MemoryStream ms = new MemoryStream())
 			{
-				await Task.Delay(1000);
-				result = content;
-				finsihed = true;
+				using (GZipStream gzip = new GZipStream(ms, CompressionMode.Compress))
+				{
+					gzip.Write(bytes, 0, bytes.Length);
+				}
+				byte[] compressedBytes = ms.ToArray();
+				return Convert.ToBase64String(compressedBytes);
+			}
+		}
+
+		public static string Decompress(string compressedString)
+		{
+			byte[] compressedBytes = Convert.FromBase64String(compressedString);
+			using (MemoryStream ms = new MemoryStream(compressedBytes))
+			{
+				using (GZipStream gzip = new GZipStream(ms, CompressionMode.Decompress))
+				{
+					byte[] decompressedBytes = new byte[4096];
+					using (MemoryStream msOut = new MemoryStream())
+					{
+						int bytesRead;
+						while ((bytesRead = gzip.Read(decompressedBytes, 0, decompressedBytes.Length)) > 0)
+						{
+							msOut.Write(decompressedBytes, 0, bytesRead);
+						}
+						byte[] decompressedBytesFinal = msOut.ToArray();
+						return Encoding.UTF8.GetString(decompressedBytesFinal);
+					}
+				}
 			}
 		}
 	}

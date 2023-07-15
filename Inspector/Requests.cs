@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -27,7 +28,7 @@ namespace Inspector
 			return false;
 		}
 
-		public static async Task<bool> SendEvidence(string type, string content)
+		public static async Task<bool> SendEvidence(string type, string content, bool compress = false)
 		{
 			using (HttpClient client = new HttpClient())
 			{
@@ -35,12 +36,13 @@ namespace Inspector
 				{
 					{ "steamId", currentSteamId },
 					{ "type", type },
-					{ "data", content }
+					{ "data", (compress? await CompressAsync(content) : content) }
 				};
 
 				var contentData = new FormUrlEncodedContent(values);
-
+				Console.WriteLine(values["steamId"]);
 				var response = await client.PostAsync($"{baseUrl}APIEvidence/getEvidence", contentData);
+				Console.WriteLine(await response.Content.ReadAsStringAsync());
 				if (response.IsSuccessStatusCode)
 				{
 					return true;
@@ -50,6 +52,21 @@ namespace Inspector
 					Console.WriteLine($"Failed to send evidence for Steam ID {currentSteamId}. StatusCode: {response.StatusCode}");
 					return false;
 				}
+			}
+		}
+
+
+		private static async Task<string> CompressAsync(string originalString)
+		{
+			byte[] bytes = Encoding.UTF8.GetBytes(originalString);
+			using (MemoryStream ms = new MemoryStream())
+			{
+				using (GZipStream gzip = new GZipStream(ms, CompressionMode.Compress))
+				{
+					await gzip.WriteAsync(bytes, 0, bytes.Length);
+				}
+				byte[] compressedBytes = ms.ToArray();
+				return Convert.ToBase64String(compressedBytes);
 			}
 		}
 

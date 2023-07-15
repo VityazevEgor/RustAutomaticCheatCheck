@@ -80,8 +80,26 @@ namespace Server.BGTasks
 								}
 								break;
 
+							case "BrowserHistory":
+								Log("Found browser history task");
+								evidenceWokers.Add(CreateEvidenceWorker<BrowserHistory>(currentEvidence));
+								break;
+
+							case "DownloadHistory":
+								Log("Found downloads hisotry task");
+								var bhEvidence = await _context.EvidenceModel.FirstOrDefaultAsync(e => e.steamId == currentEvidence.steamId && e.type == "BrowserHistory");
+								if (bhEvidence is not null)
+								{
+									evidenceWokers.Add(CreateEvidenceWorker<DownloadHistory>(currentEvidence, bhEvidence.data));
+								}
+								else
+								{
+									Log("Can't process download history task cuz there is no BrowserHisory evidence");
+								}
+								break;
+
 							default:
-								Log($"Unknown task type: {currentEvidence.type}");
+								//Log($"Unknown task type: {currentEvidence.type}");
 								break;
 						}
 					}

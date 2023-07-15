@@ -56,7 +56,7 @@ namespace Server.BGTasks.EvidenceProcessors
 				if (susFiles.Count > 0)
 				{
 					score = 70;
-					reasonForScore = $"I found suspicious files that were running before the Rust: {string.Join(',', susFiles)}";
+					reasonForScore = $"I found suspicious files that were running before the Rust: \n{string.Join('\n', susFiles)}";
 				}
 				else
 				{

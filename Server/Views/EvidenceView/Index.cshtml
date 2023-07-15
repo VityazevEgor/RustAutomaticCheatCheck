@@ -1,4 +1,5 @@
-﻿@model IEnumerable<Server.Models.EvidenceModel>
+﻿@using System.Web;
+@model IEnumerable<Server.Models.EvidenceModel>
 
 @{
     ViewData["Title"] = "Index";
@@ -30,7 +31,7 @@
 
                                 <div id="collapseReason_@item.Id" class="collapse" aria-labelledby="headingReason_@item.Id" data-bs-parent="#accordion_@item.Id">
                                     <div class="card-body">
-                                        <p>@item.reasonForScore</p>
+                                            <pre>@item.reasonForScore</pre>
                                     </div>
                                 </div>
                             </div>

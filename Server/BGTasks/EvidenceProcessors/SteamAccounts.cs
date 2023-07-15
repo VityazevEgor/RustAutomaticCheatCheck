@@ -33,7 +33,7 @@ namespace Server.BGTasks.EvidenceProcessors
 			if (bannedIDs.Count > 0)
 			{
 				score = 20;
-				reasonForScore = $"Found account(s) with game bans: {string.Join(' ', bannedIDs)}";
+				reasonForScore = $"Found account(s) with game bans: \n{string.Join('\n', bannedIDs)}";
 			}
 			else
 			{

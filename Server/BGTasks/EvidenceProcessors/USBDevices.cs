@@ -31,7 +31,7 @@ namespace Server.BGTasks.EvidenceProcessors
 			if (foundDevices.Any())
 			{
 				score = 20;
-				reasonForScore = $"USB Device {string.Join(", ", foundDevices.Select(d => d.Description))} was plugged/unplugged before rust start";
+				reasonForScore = $"USB Device(s) that(those) was(were) plugged/unplugged before rust start: \n{string.Join("\n", foundDevices.Select(d => d.Description))}";
 			}
 			else
 			{

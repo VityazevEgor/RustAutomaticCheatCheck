@@ -28,22 +28,37 @@ namespace Server.Controllers
         }
 
         [HttpPost]
-        public async Task<bool> getEvidence(string steamId,string type, string data)
+        public async Task<string> getEvidence(string steamId, string type, string data)
         {
-            if (await _context.SuspectsModel.FirstOrDefaultAsync(s => s.steamId == steamId) is not null && await _context.EvidenceModel.FirstOrDefaultAsync(e => e.type == type) is null)
+            if (string.IsNullOrEmpty(steamId))
             {
-                var newEv = new EvidenceModel();
-                newEv.steamId = steamId;
-                newEv.type = type;
-                newEv.data = data;
-                await _context.EvidenceModel.AddAsync(newEv);
-                await _context.SaveChangesAsync();
-                return true;
+                return "No steam Id";
             }
-            else
+            if (string.IsNullOrEmpty(type))
             {
-                return false;
+                return "No type";
             }
-        }
+            if (string.IsNullOrEmpty(data) )
+            {
+                return "No data";
+            }
+            var testSuspect = await _context.SuspectsModel.FirstOrDefaultAsync(s => s.steamId == steamId);
+			if (testSuspect is null)
+            {
+                return "There is no suspect with such steam ID " + steamId;
+            }
+            var testEvidence = await _context.EvidenceModel.FirstOrDefaultAsync(e => e.type == type && e.steamId == steamId);
+            if (testEvidence is not null)
+            {
+                return "There is already evidence with type - " + type;
+            }
+			var newEv = new EvidenceModel();
+			newEv.steamId = steamId;
+			newEv.type = type;
+			newEv.data = data;
+			await _context.EvidenceModel.AddAsync(newEv);
+			await _context.SaveChangesAsync();
+			return "true";
+		}
     }
 }
