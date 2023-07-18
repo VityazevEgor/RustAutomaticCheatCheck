@@ -1,4 +1,6 @@
-﻿using System.IO.Compression;
+﻿using OpenQA.Selenium.Firefox;
+using OpenQA.Selenium;
+using System.IO.Compression;
 using System.Text;
 
 namespace Server.BGTasks
@@ -26,5 +28,34 @@ namespace Server.BGTasks
 				}
 			}
 		}
-	}
+
+        public static async Task<bool> SearchDuckDuckGo(FirefoxDriver driver, string fileName)
+        {
+            string url = $"https://duckduckgo.com/?q=\"{Uri.EscapeDataString(fileName)}\"";
+            driver.Navigate().GoToUrl(url);
+
+            IJavaScriptExecutor js = driver;
+            await WaitForPageLoad(js);
+
+            return driver.PageSource.Contains("результаты не найдены");
+        }
+
+        private static async Task WaitForPageLoad(IJavaScriptExecutor js)
+        {
+            var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(4));
+            var cancellationToken = cancellationTokenSource.Token;
+
+            bool pageLoaded = false;
+            while (!pageLoaded && !cancellationToken.IsCancellationRequested)
+            {
+                pageLoaded = (bool)js.ExecuteScript("return document.readyState == 'complete'");
+                await Task.Delay(50, cancellationToken);
+            }
+
+            //if (!pageLoaded)
+            //{
+            //	throw new TimeoutException("Timeout while waiting for page to load.");
+            //}
+        }
+    }
 }

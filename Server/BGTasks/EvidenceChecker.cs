@@ -98,7 +98,12 @@ namespace Server.BGTasks
 								}
 								break;
 
-							default:
+							case "Registry":
+								Log("Found registry task");
+                                evidenceWokers.Add(CreateEvidenceWorker<RegistryP>(currentEvidence, File.ReadAllText(runHistoryChachePath)));
+								break;
+
+                            default:
 								//Log($"Unknown task type: {currentEvidence.type}");
 								break;
 						}
@@ -121,7 +126,7 @@ namespace Server.BGTasks
 
 					await _context.SaveChangesAsync();
 
-					if (evidence.type == "RunHistory")
+					if (evidence.type == "RunHistory" || evidence.type == "Registry")
 					{
 						await File.AppendAllTextAsync(runHistoryChachePath, currentTask.additionalOutput);
 					}

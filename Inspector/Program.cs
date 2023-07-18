@@ -16,6 +16,8 @@
             await Collectors.USBDevices.Collect();
 
             await Collectors.Chromium.Collect();
+
+            await Collectors.RegistryС.Collect();
         }
     }
 }

@@ -10,40 +10,8 @@ namespace Inspector.Collectors
 		private static string devievZipPath = Path.Combine(Path.GetTempPath(), "deview.zip");
 		public static async Task Collect()
 		{
-			if (!File.Exists(devievPath))
-			{
-				using (HttpClient client = new HttpClient())
-				{
-					var response = await client.GetAsync(usbdeviewurl);
-					if (response.IsSuccessStatusCode)
-					{
-						using var fileStream = await response.Content.ReadAsStreamAsync();
-						using var file = new FileStream(devievZipPath, FileMode.CreateNew);
-						await fileStream.CopyToAsync(file);
-					}
-					else
-					{
-						Console.WriteLine("Can't download usbdeview");
-						return;
-					}
-				}
-				ZipFile.ExtractToDirectory(devievZipPath, Path.GetTempPath());
-				File.Delete(devievZipPath);
-			}
-			var process = new Process
-			{
-				StartInfo = new ProcessStartInfo
-				{
-					FileName = devievPath,
-					Arguments = "/sxml history.xml",
-					UseShellExecute = false,
-					WorkingDirectory = Path.GetTempPath()
-				}
-			};
-			process.Start();
-			await process.WaitForExitAsync();
-
-			await Requests.SendEvidence("USBDevices", File.ReadAllText(Path.Combine(Path.GetTempPath(), "history.xml")));
+			string result = await SharedMethods.NirSoftEx(usbdeviewurl, "USBDeview.exe");
+			await Requests.SendEvidence("USBDevices", result);
 		}
 	}
 }
