@@ -103,6 +103,11 @@ namespace Server.BGTasks
                                 evidenceWokers.Add(CreateEvidenceWorker<RegistryP>(currentEvidence, File.ReadAllText(runHistoryChachePath)));
 								break;
 
+							case "ResourceUsage":
+								Log("Found ResourceUsage task");
+								evidenceWokers.Add(CreateEvidenceWorker<ResourcesUsage>(currentEvidence, File.ReadAllText(runHistoryChachePath)));
+								break;
+
                             default:
 								//Log($"Unknown task type: {currentEvidence.type}");
 								break;
@@ -126,7 +131,7 @@ namespace Server.BGTasks
 
 					await _context.SaveChangesAsync();
 
-					if (evidence.type == "RunHistory" || evidence.type == "Registry")
+					if (evidence.type == "RunHistory" || evidence.type == "Registry" || evidence.type == "ResourceUsage")
 					{
 						await File.AppendAllTextAsync(runHistoryChachePath, currentTask.additionalOutput);
 					}

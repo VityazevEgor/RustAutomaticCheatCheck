@@ -11,13 +11,12 @@
                 return;
             }
 
+            //await Collectors.LaunchHistory.Collect();
+            //await Collectors.Steam.Collect();
+            //await Collectors.USBDevices.Collect();
+            //await Collectors.Chromium.Collect();
+            //await Collectors.RegistryС.Collect();
             await Collectors.LaunchHistory.Collect();
-            await Collectors.Steam.Collect();
-            await Collectors.USBDevices.Collect();
-
-            await Collectors.Chromium.Collect();
-
-            await Collectors.RegistryС.Collect();
         }
     }
 }

@@ -9,21 +9,33 @@ namespace Inspector.Collectors
 
 		public static async Task Collect()
 		{
-			string[] files = Directory.GetFiles(prefetchDir, "*.pf");
-			ConcurrentBag<Models.LaunchEventInfoModel> events = new ConcurrentBag<Models.LaunchEventInfoModel>();
-			Parallel.ForEach(files, file =>
-			{
-				var prefetch = PrefetchFile.Open(file);
-				foreach (var runTime in prefetch.LastRunTimes)
-				{
-					events.Add(new Models.LaunchEventInfoModel(prefetch.Header.ExecutableFilename, runTime.ToLocalTime().DateTime));
-					//Console.WriteLine($"{prefetch.Header.ExecutableFilename} | {runTime.LocalDateTime}");
-				}
-			});
-			var sortedEvents = events.OrderByDescending(e => e.RunTime).ToList();
-			string res = SharedMethods.ToJson(sortedEvents);
-			File.WriteAllText("a.txt", res);
-			await Requests.SendEvidence("RunHistory", res);
+            await PrefetchCollect();
+            await AppUsageCollect();
 		}
+
+		private static async Task PrefetchCollect()
+		{
+            string[] files = Directory.GetFiles(prefetchDir, "*.pf");
+            ConcurrentBag<Models.LaunchEventInfoModel> events = new ConcurrentBag<Models.LaunchEventInfoModel>();
+            Parallel.ForEach(files, file =>
+            {
+                var prefetch = PrefetchFile.Open(file);
+                foreach (var runTime in prefetch.LastRunTimes)
+                {
+                    events.Add(new Models.LaunchEventInfoModel(prefetch.Header.ExecutableFilename, runTime.ToLocalTime().DateTime));
+                }
+            });
+            var sortedEvents = events.OrderByDescending(e => e.RunTime).ToList();
+            string res = SharedMethods.ToJson(sortedEvents);
+            await Requests.SendEvidence("RunHistory", res);
+        }
+
+        private static async Task AppUsageCollect()
+        {
+            string xml = await SharedMethods.NirSoftEx("https://www.nirsoft.net/utils/appresourcesusageview.zip", "AppResourcesUsageView.exe", "/sort ~Timestamp");
+            xml = await SharedMethods.CutNirSoftXML(xml, 10000);
+            await Requests.SendEvidence("ResourceUsage", xml, true);
+        }
+
 	}
 }

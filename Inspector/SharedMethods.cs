@@ -41,7 +41,7 @@ namespace Inspector
 		}
 
 
-		public static async Task<string> NirSoftEx(string url, string exeName)
+		public static async Task<string> NirSoftEx(string url, string exeName, string args = "")
 		{
 			string exePath = Path.Combine(Path.GetTempPath(), exeName);
             string zipPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()+".zip");
@@ -72,15 +72,33 @@ namespace Inspector
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = exePath,
-                    Arguments = $"/sxml {outputFileName}",
+                    Arguments = $"/sxml {outputFileName} {args}",
                     UseShellExecute = false,
                     WorkingDirectory = Path.GetTempPath()
                 }
             };
             process.Start();
             await process.WaitForExitAsync();
+            string result = File.ReadAllText(Path.Combine(Path.GetTempPath(), outputFileName));
+            File.Delete(Path.Combine(Path.GetTempPath(), outputFileName));
+            return result;
+        }
 
-            return File.ReadAllText(Path.Combine(Path.GetTempPath(), outputFileName));
+        public static async Task<string> CutNirSoftXML(string xml, int amountOfItems)
+        {
+            List<string> lines = xml.Split('\n').ToList();
+            int cItem = 0;
+            for (int i=0; i<lines.Count; i++)
+            {
+                if (cItem >= amountOfItems)
+                {
+                    lines.RemoveRange(i, lines.Count-i);
+                    break;
+                }
+                if (lines[i].Contains("</item>", StringComparison.OrdinalIgnoreCase)) cItem++;
+            }
+            lines.Add(lines[1].Replace("<", "</"));
+            return string.Join('\n', lines);
         }
 
 	}

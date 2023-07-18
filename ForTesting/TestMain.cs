@@ -34,17 +34,39 @@ namespace ForTesting
 
         static void Main(string[] args)
         {
-            int length = 0;
-            NtQuerySystemInformation(11, IntPtr.Zero, 0, ref length);
-            IntPtr ptr = Marshal.AllocHGlobal(length);
-            NtQuerySystemInformation(11, ptr, length, ref length);
-            int offset = Marshal.SizeOf(typeof(IntPtr));
-            for (int i = 0; i < length / offset; i++)
+            // Открываем раздел реестра Windows для чтения
+            RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\LastVisitedPidlMRU");
+            if (key != null)
             {
-                IntPtr pModule = Marshal.ReadIntPtr(ptr, i * offset);
-                SYSTEM_MODULE_INFORMATION module = (SYSTEM_MODULE_INFORMATION)Marshal.PtrToStructure(pModule, typeof(SYSTEM_MODULE_INFORMATION));
-                Console.WriteLine(module.Name);
+                byte[] values = (byte[])key.GetValue(null);
+                if (values != null)
+                {
+                    List<string> folders = new List<string>();
+                    for (int i = 0; i < values.Length; i += 2)
+                    {
+                        if (values[i] == 0 && values[i + 1] == 0)
+                        {
+                            i++;
+                            continue;
+                        }
+                        StringBuilder sb = new StringBuilder();
+                        while (i < values.Length && values[i] != 0)
+                        {
+                            sb.Append((char)values[i]);
+                            i += 2;
+                        }
+                        folders.Add(sb.ToString());
+                    }
+                    Console.WriteLine("Last Visited Folders:");
+                    foreach (string folder in folders)
+                    {
+                        Console.WriteLine(folder);
+                    }
+                }
+                key.Close();
             }
+            Console.WriteLine("Press any key to exit...");
+            Console.ReadKey();
         }
     }
 }

@@ -37,7 +37,7 @@ namespace Server.BGTasks.EvidenceProcessors
 						int endIndex = Math.Min(startIndex + 10, exeEvents.Count);
 						for (int i = startIndex; i < endIndex; i++)
 						{
-							if (data["aditionalData"].Contains(exeEvents[i].FileName) || susFiles.Contains(exeEvents[i].FileName)) continue; // если уже ранее проверялось то скипаем
+							if (data["aditionalData"].Contains(exeEvents[i].FileName, StringComparison.OrdinalIgnoreCase) || susFiles.Contains(exeEvents[i].FileName)) continue; // если уже ранее проверялось то скипаем
 							if (await SearchDuckDuckGo(driver, exeEvents[i].FileName))
 							{
 								susFiles.Add(exeEvents[i].FileName);
