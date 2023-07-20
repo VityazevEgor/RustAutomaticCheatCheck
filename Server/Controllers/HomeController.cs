@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Server.Filters;
 using Server.Models;
 using System.Diagnostics;
 
 namespace Server.Controllers
 {
-    public class HomeController : Controller
+	[TypeFilter(typeof(AuthFilter))]
+	public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
         private readonly dbContext _context;
@@ -18,7 +20,7 @@ namespace Server.Controllers
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            return View(await _context.SuspectsModel.ToListAsync());
+            return View(await _context.SuspectsModel.OrderByDescending(s=>s.createdAt).ToListAsync());
         }
 
         [HttpPost]
@@ -37,9 +39,12 @@ namespace Server.Controllers
             var model = await _context.SuspectsModel.FirstOrDefaultAsync(m=>m.Id == id);
             if (model is not null)
             {
+                var evToDelete = await _context.EvidenceModel.Where(e=>e.steamId == model.steamId).ToListAsync();
+                _context.EvidenceModel.RemoveRange(evToDelete);
                 _context.SuspectsModel.Remove(model);
-                await _context.SaveChangesAsync();
+                
             }
+			await _context.SaveChangesAsync();
 			return RedirectToAction("Index");
 		}
 

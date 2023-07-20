@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO.Compression;
-using System.Linq;
+﻿using System.IO.Compression;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Inspector
 {
-	internal class Requests
+    internal class Requests
 	{
 		public static string currentSteamId = string.Empty;
 		private const string baseUrl = "http://localhost:5079/";

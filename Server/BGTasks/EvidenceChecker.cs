@@ -1,12 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using OpenQA.Selenium.DevTools.V112.Debugger;
 using Server.BGTasks.EvidenceProcessors;
 using Server.Models;
-using System.Diagnostics;
 
 namespace Server.BGTasks
 {
-	public class EvidenceChecker : IHostedService
+    public class EvidenceChecker : IHostedService
 	{
 		private readonly IServiceScopeFactory _serviceScopeFactory;
 		private readonly dbContext _context;

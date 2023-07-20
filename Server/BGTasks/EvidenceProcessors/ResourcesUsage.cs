@@ -88,7 +88,7 @@ namespace Server.BGTasks.EvidenceProcessors
 
                 logItem.FileName = Path.GetFileName(logItem.FileName);
                 list.Add(logItem);
-                Console.WriteLine($"{logItem.FileName} - {logItem.RunTime}");
+                //Console.WriteLine($"{logItem.FileName} - {logItem.RunTime}");
             }
 
             return list;

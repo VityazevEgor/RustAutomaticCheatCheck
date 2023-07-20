@@ -19,8 +19,14 @@ namespace Server
 
 			builder.Services.AddHostedService<EvidenceChecker>();
 
+            builder.Services.AddSession(options => {
+                options.IOTimeout = TimeSpan.FromHours(2);
+                options.Cookie.HttpOnly = true;
+				options.Cookie.IsEssential = true;
+			});
+
 			var app = builder.Build();
-			Console.WriteLine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location));
+			//Console.WriteLine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location));
 			// Configure the HTTP request pipeline.
 			if (!app.Environment.IsDevelopment())
             {
@@ -35,6 +41,8 @@ namespace Server
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
+
+            app.UseSession();
 
             app.Run();
             

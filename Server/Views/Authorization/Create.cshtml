@@ -1,0 +1,38 @@
+﻿@model Server.Models.ModeratorModel
+
+@{
+    ViewData["Title"] = "Create account";
+}
+
+<div class="row align-items-center h-100">
+			<div class="col-md-4 mx-auto">
+				<div class="card">
+					<div class="card-header">
+						<h4>Registration</h4>
+					</div>
+					<div class="card-body">
+						<form asp-action="Create">
+							<div class="form-group">
+								<label for="inputUsername">Username</label>
+								<input type="text" class="form-control" asp-for="Login" placeholder="Enter username">
+							</div>
+							<div class="form-group">
+								<label for="inputPassword">Password</label>
+								<input type="password" class="form-control" asp-for="Password" placeholder="Enter password">
+							</div>
+							<div class="form-group">
+								<label for="inputInviteCode">Invite code</label>
+								<input type="text" class="form-control" name="InviteCode" placeholder="Enter invite code">
+							</div>
+							<p></p>
+							<button type="submit" class="btn btn-primary btn-block">Create account</button>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

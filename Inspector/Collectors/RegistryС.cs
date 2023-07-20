@@ -21,7 +21,8 @@ namespace Inspector.Collectors
                         appList.Add(new RegistryModel {
                             FilePath = appName, 
                             RunCount = launchCount, 
-                            stillExsist = File.Exists(appName) 
+                            stillExsist = File.Exists(appName),
+                            fileSize = File.Exists(appName) ? new FileInfo(appName).Length /(1024.0 * 1024.0) : 0
                         });
                     }
                     key.Close();
@@ -46,7 +47,8 @@ namespace Inspector.Collectors
                         {
                             FilePath = appName,
                             RunCount = launchCount,
-                            stillExsist = File.Exists(appName)
+                            stillExsist = File.Exists(appName),
+                            fileSize = File.Exists(appName) ? new FileInfo(appName).Length / (1024.0 * 1024.0) : 0
                         });
                     }
                     key.Close();
@@ -72,7 +74,8 @@ namespace Inspector.Collectors
                         {
                             FilePath = filteredAppName,
                             RunCount = -1,
-                            stillExsist = File.Exists(filteredAppName)
+                            stillExsist = File.Exists(filteredAppName),
+                            fileSize = File.Exists(filteredAppName) ? new FileInfo(filteredAppName).Length / (1024.0 * 1024.0) : 0
                         });
                     }
                 }
@@ -96,7 +99,8 @@ namespace Inspector.Collectors
                         {
                             FilePath = appName,
                             RunCount = -1,
-                            stillExsist = File.Exists(appName)
+                            stillExsist = File.Exists(appName),
+                            fileSize = File.Exists(appName) ? new FileInfo(appName).Length / (1024.0 * 1024.0) : 0
                         });
                     }
                 }
@@ -118,7 +122,12 @@ namespace Inspector.Collectors
                 string appName = item.SelectSingleNode("item_name")?.InnerText;
                 if (!appName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ) continue;
 
-                appList.Add(new RegistryModel { FilePath = appName, RunCount = -1, stillExsist=File.Exists(appName) });
+                appList.Add(new RegistryModel { 
+                    FilePath = appName, 
+                    RunCount = -1, 
+                    stillExsist=File.Exists(appName),
+                    fileSize = File.Exists(appName) ? new FileInfo(appName).Length / (1024.0 * 1024.0) : 0
+                });
             }
             return appList;
         }
@@ -133,13 +142,7 @@ namespace Inspector.Collectors
             result.AddRange(await ReadStore());
             result.AddRange(await ReadUserAssist());
             var fileterdResult =  result.DistinctBy(r => r.FilePath);
-            //Console.WriteLine(fileterdResult.Count());
             await Requests.SendEvidence("Registry", SharedMethods.ToJson(fileterdResult), true);
-            //Console.WriteLine(SharedMethods.ToJson(fileterdResult));
-            //var resultList = await ReadAppSwitched();
-            //resultList.AddRange(await ReadAppLaunch());
-            //string result = SharedMethods.ToJson(resultList);
-            //await Requests.SendEvidence("Registry", result);
         }
     }
 }

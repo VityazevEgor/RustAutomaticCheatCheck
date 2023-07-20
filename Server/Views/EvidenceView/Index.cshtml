@@ -5,7 +5,14 @@
     ViewData["Title"] = "Index";
 }
 
-<h1>Evidence for @Model.First().steamId</h1>
+@if (Model.Any())
+{
+    <h1>Evidence for @Model.First().steamId</h1>
+}
+else
+{
+    <h1>No id</h1>
+}
 
 <div class="row">
     @foreach (var item in Model)

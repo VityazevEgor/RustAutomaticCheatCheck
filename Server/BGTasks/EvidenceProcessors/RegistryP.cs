@@ -1,5 +1,4 @@
 ﻿using Server.BGTasks.EvidenceModels;
-using Server.BGTasks;
 using OpenQA.Selenium.Firefox;
 using static Server.BGTasks.SharedBGMethods;
 using System.Text;
@@ -22,7 +21,7 @@ namespace Server.BGTasks.EvidenceProcessors
         {
             string decompressedData = await DecompressAsync(data["raw"]);
             List<RegistryModel> launchedPrograms = await JsonSerializer.DeserializeAsync<List<RegistryModel>>(new MemoryStream(Encoding.UTF8.GetBytes(decompressedData)));
-            List<RegistryModel> filesToSeaerch = launchedPrograms.DistinctBy(l=>Path.GetFileName(l.FilePath)).Where(l=>l.RunCount<10).ToList();
+            List<RegistryModel> filesToSeaerch = launchedPrograms.DistinctBy(l=>Path.GetFileName(l.FilePath)).Where(l=>l.RunCount<2 && l.fileSize<12.0).ToList();
 
             List<string> susFiles = new List<string>();
             List<string> whiteListFiles = new List<string>();
